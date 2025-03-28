@@ -14,5 +14,10 @@ A personal finance management application that classifies expenses and gives bud
    git clone https://github.com/yourusername/FinSage.git
    cd FinSage
 
+2. Install dependencies:
+   ```bash
+   npm install  # or yarn install
+
+
 
 
