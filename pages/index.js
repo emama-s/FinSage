@@ -6,6 +6,7 @@ import { EmailAuthProvider, GoogleAuthProvider } from 'firebase/auth';
 import { Button, CircularProgress, Container, Dialog, Typography } from '@mui/material';
 import { auth } from '../firebase/firebase';
 import styles from '../styles/landing.module.scss';
+import { useAuth } from '../firebase/auth';
 
 const REDIRECT_PAGE = '/dashboard';
 
@@ -22,8 +23,18 @@ const uiConfig = {
 export default function Home() {
   const router = useRouter();
   const [login, setLogin] = useState(false);
+  const { authUser, isLoading } = useAuth();
 
-  return (
+  //Redirect if finished loading and user is logged in
+  useEffect(() => {
+    if(!isLoading && authUser) {
+      router.push('/dashboard');
+    }
+  }, [authUser, isLoading])
+
+  return ((isLoading || (!isLoading && !!authUser)) ?
+  <CircularProgress color='inherit' sx={{ marginLeft: '50%', marginTop: '25%' }}/>
+  :
     <div>
       <Head>
         <title>Expense Tracker</title>

@@ -3,7 +3,7 @@ import { useAuth } from '../firebase/auth';
 import styles from '../styles/navbar.module.scss';
 
 export default function NavBar() {
-  const { authUser } = useAuth();
+  const { authUser, signOut } = useAuth();
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -17,7 +17,7 @@ export default function NavBar() {
               <Typography variant="h6" sx={{ flexGrow: 1 }}>
                 {authUser?.email}
               </Typography>
-              <Button variant="text" color="secondary">
+              <Button variant="text" color="secondary" onClick={signOut}>
                 Logout
               </Button>
             </Stack>
