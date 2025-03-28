@@ -18,6 +18,10 @@ A personal finance management application that classifies expenses and gives bud
    ```bash
    npm install  # or yarn install
 
+3. Start the development server:
+   ```bash
+   npm run dev  # or yarn dev
+
 
 
 
