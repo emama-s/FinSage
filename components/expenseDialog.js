@@ -1,114 +1,89 @@
-import { useState, useEffect } from 'react';
-import { Avatar, Button, Dialog, DialogActions, DialogContent, Stack, TextField, Typography } from '@mui/material';
-import AdapterDateFns from '@mui/lab/AdapterDateFns';
-import DatePicker from '@mui/lab/DatePicker';
-import LocalizationProvider from '@mui/lab/LocalizationProvider';
-import { useAuth } from '../firebase/auth';
-import { addReceipt, updateReceipt } from '../firebase/firestore';
-import { replaceImage, uploadImage } from '../firebase/storage';
-import { RECEIPTS_ENUM } from '../pages/dashboard';
-import styles from '../styles/expenseDialog.module.scss';
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  MenuItem,
+} from '@mui/material'
+import { useAuth } from '../supabase/auth'
+import { createExpense, updateExpense } from '../supabase/db'
 
-const DEFAULT_FILE_NAME = "No file selected";
+export default function ExpenseDialog({ open, onClose, expense = null }) {
+  const { user } = useAuth()
+  const [formData, setFormData] = useState({
+    amount: expense?.amount || '',
+    description: expense?.description || '',
+    category_id: expense?.category_id || '',
+    date: expense?.date || new Date().toISOString().split('T')[0],
+  })
 
-// Default form state for the dialog
-const DEFAULT_FORM_STATE = {
-  fileName: DEFAULT_FILE_NAME,
-  file: null,
-  date: null,
-  locationName: "",
-  address: "",
-  items: "",
-  amount: "",
-};
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      const expenseData = {
+        ...formData,
+        user_id: user.id,
+        amount: parseFloat(formData.amount),
+      }
 
-/* 
- Dialog to input receipt information
- 
- props:
-  - edit is the receipt to edit
-  - showDialog boolean for whether to show this dialog
-  - onError emits to notify error occurred
-  - onSuccess emits to notify successfully saving receipt
-  - onCloseDialog emits to close dialog
- */
-export default function ExpenseDialog(props) {
-  const isEdit = Object.keys(props.edit).length > 0;
-  const [formFields, setFormFields] = useState(isEdit ? props.edit : DEFAULT_FORM_STATE);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // If the receipt to edit or whether to close or open the dialog ever changes, reset the form fields
-  useEffect(() => {
-    if (props.showDialog) {
-      setFormFields(isEdit ? props.edit : DEFAULT_FORM_STATE);
+      if (expense) {
+        await updateExpense(expense.id, expenseData)
+      } else {
+        await createExpense(expenseData)
+      }
+      onClose(true)
+    } catch (error) {
+      console.error('Error saving expense:', error)
+      onClose(false)
     }
-  }, [props.edit, props.showDialog])
-
-  // Check whether any of the form fields are unedited
-  const isDisabled = () => formFields.fileName === DEFAULT_FILE_NAME || !formFields.date || formFields.locationName.length === 0 
-                     || formFields.address.length === 0 || formFields.items.length === 0 || formFields.amount.length === 0;
-
-  // Update given field in the form
-  const updateFormField = (event, field) => {
-    setFormFields(prevState => ({...prevState, [field]: event.target.value}))
-  }
-
-  // Set the relevant fields for receipt image
-  const setFileData = (target) => {
-    const file = target.files[0];
-    setFormFields(prevState => ({...prevState, fileName: file.name}));
-    setFormFields(prevState => ({...prevState, file}));
-  }
-
-  const closeDialog = () => {
-    setIsSubmitting(false);
-    props.onCloseDialog();
   }
 
   return (
-    <Dialog classes={{paper: styles.dialog}}
-      onClose={() => closeDialog()}
-      open={props.showDialog}
-      component="form">
-      <Typography variant="h4" className={styles.title}>
-        {isEdit ? "EDIT" : "ADD"} EXPENSE
-      </Typography>
-      <DialogContent className={styles.fields}>
-        <Stack direction="row" spacing={2} className={styles.receiptImage}>
-          {(isEdit && !formFields.fileName) && <Avatar alt="receipt image" src={formFields.imageUrl} sx={{ marginRight: '1em' }}/> }
-          <Button variant="outlined" component="label" color="secondary">
-            Upload Receipt
-            <input type="file" hidden onInput={(event) => {setFileData(event.target)}} />
+    <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth>
+      <DialogTitle>{expense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Amount"
+            type="number"
+            fullWidth
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            required
+          />
+          <TextField
+            margin="dense"
+            label="Description"
+            fullWidth
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            required
+          />
+          <TextField
+            margin="dense"
+            label="Date"
+            type="date"
+            fullWidth
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => onClose(false)}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            {expense ? 'Update' : 'Add'}
           </Button>
-          <Typography>{formFields.fileName}</Typography>
-        </Stack>
-        <Stack>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DatePicker
-              label="Date"
-              value={formFields.date}
-              onChange={(newDate) => {
-                setFormFields(prevState => ({...prevState, date: newDate}));
-              }}
-              maxDate={new Date()}
-              renderInput={(params) => <TextField color="tertiary" {...params} />}
-            />
-          </LocalizationProvider>
-        </Stack>
-        <TextField color="tertiary" label="Location name" variant="standard" value={formFields.locationName} onChange={(event) => updateFormField(event, 'locationName')} />
-        <TextField color="tertiary" label="Location address" variant="standard" value={formFields.address} onChange={(event) => updateFormField(event, 'address')} />
-        <TextField color="tertiary" label="Items" variant="standard" value={formFields.items} onChange={(event) => updateFormField(event, 'items')} />
-        <TextField color="tertiary" label="Amount" variant="standard" value={formFields.amount} onChange={(event) => updateFormField(event, 'amount')} />
-      </DialogContent>
-      <DialogActions>
-        {isSubmitting ? 
-          <Button color="secondary" variant="contained" disabled={true}>
-            Submitting...
-          </Button> :
-          <Button color="secondary" variant="contained" disabled={isDisabled()}>
-            Submit
-          </Button>}
-      </DialogActions>
+        </DialogActions>
+      </form>
     </Dialog>
   )
 }

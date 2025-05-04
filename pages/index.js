@@ -1,59 +1,61 @@
-import { useEffect, useState } from 'react';
-import Head from 'next/head';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
-import { useRouter } from 'next/router';
-import { EmailAuthProvider, GoogleAuthProvider } from 'firebase/auth';
-import { Button, CircularProgress, Container, Dialog, Typography } from '@mui/material';
-import { auth } from '../firebase/firebase';
-import styles from '../styles/landing.module.scss';
-import { useAuth } from '../firebase/auth';
-
-const REDIRECT_PAGE = '/dashboard';
-
-//Configure FirebaseUI
-const uiConfig = {
-  signInFlow: 'popup',
-  signInSuccessUrl: REDIRECT_PAGE,
-  signInOptions: [
-    EmailAuthProvider.PROVIDER_ID,
-    GoogleAuthProvider.PROVIDER_ID,
-  ]
-}
+import { useEffect } from 'react'
+import Head from 'next/head'
+import { useRouter } from 'next/router'
+import { useAuth } from '../supabase/auth'
+import { Button, Container, Typography, Box } from '@mui/material'
 
 export default function Home() {
-  const router = useRouter();
-  const [login, setLogin] = useState(false);
-  const { authUser, isLoading } = useAuth();
+  const router = useRouter()
+  const { user } = useAuth()
 
-  //Redirect if finished loading and user is logged in
   useEffect(() => {
-    if(!isLoading && authUser) {
-      router.push('/dashboard');
+    if (user) {
+      router.push('/dashboard')
     }
-  }, [authUser, isLoading])
+  }, [user])
 
-  return ((isLoading || (!isLoading && !!authUser)) ?
-  <CircularProgress color='inherit' sx={{ marginLeft: '50%', marginTop: '25%' }}/>
-  :
+  return (
     <div>
       <Head>
-        <title>Expense Tracker</title>
+        <title>FinSage - Expense Tracker</title>
+        <meta name="description" content="Track your expenses with FinSage" />
       </Head>
 
-      <main>
-        <Container className={styles.container}>
-          <Typography variant="h1">Welcome to Expense Tracker!</Typography>
-          <Typography variant="h2">Add, view, edit, and delete expenses</Typography>
-          <div className={styles.buttons}>
-            <Button variant="contained" color="secondary"
-              onClick={() => setLogin(true)}>
-              Login / Register
+      <Container maxWidth="md">
+        <Box
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h2" component="h1" gutterBottom>
+            Welcome to FinSage
+          </Typography>
+          <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 4 }}>
+            Your Personal Expense Tracker
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => router.push('/login')}
+            >
+              Log In
             </Button>
-          </div>
-          <Dialog open={login} onClose={() => setLogin(false)}>
-           <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth}></StyledFirebaseAuth>
-          </Dialog>
-        </Container>
-      </main>
-    </div>);
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => router.push('/signup')}
+            >
+              Sign Up
+            </Button>
+          </Box>
+        </Box>
+      </Container>
+    </div>
+  )
 }

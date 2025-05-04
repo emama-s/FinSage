@@ -1,18 +1,33 @@
 import '../styles/global.scss'
-import '../styles/firebaseui-styling.global.scss';
-import { ThemeProvider } from '@mui/material/styles';
-import { theme } from '../styles/theme.js';
-import AdapterDateFns from '@mui/lab/AdapterDateFns';
-import LocalizationProvider from '@mui/lab/LocalizationProvider';
-import { AuthUserProvider } from '../firebase/auth.js';
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { AuthProvider } from '../supabase/auth'
+import CssBaseline from '@mui/material/CssBaseline'
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+    background: {
+      default: '#f5f5f5',
+    },
+  },
+})
 
 export default function App({ Component, pageProps }) {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <AuthUserProvider>
-        <ThemeProvider theme={theme}>
-         <Component {...pageProps} />
-        </ThemeProvider>
-      </AuthUserProvider>
-    </LocalizationProvider>);
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <Component {...pageProps} />
+        </AuthProvider>
+      </ThemeProvider>
+    </LocalizationProvider>
+  )
 }

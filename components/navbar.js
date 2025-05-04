@@ -1,29 +1,34 @@
-import { AppBar, Box, Button, Container, Stack, Toolbar, Typography } from '@mui/material';
-import { useAuth } from '../firebase/auth';
-import styles from '../styles/navbar.module.scss';
+import { useRouter } from 'next/router'
+import { useAuth } from '../supabase/auth'
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
 
 export default function NavBar() {
-  const { authUser, signOut } = useAuth();
+  const router = useRouter()
+  const { user, signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" className={styles.appbar}>
-        <Toolbar className={styles.toolbar}>
-          <Container className={styles.container}>
-            <Typography variant="h3" sx={{ flexGrow: 1, alignSelf: "center" }}>
-              EXPENSE TRACKER
-            </Typography>
-            <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-              <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                {authUser?.email}
-              </Typography>
-              <Button variant="text" color="secondary" onClick={signOut}>
-                Logout
-              </Button>
-            </Stack>
-          </Container>
-        </Toolbar>
-      </AppBar>
-    </Box>
-  );
+    <AppBar position="static">
+      <Toolbar>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          FinSage
+        </Typography>
+        {user && (
+          <Box>
+            <Button color="inherit" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+          </Box>
+        )}
+      </Toolbar>
+    </AppBar>
+  )
 }
