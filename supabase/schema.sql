@@ -44,3 +44,11 @@ create policy "Users can view their own expenses"
 create policy "Users can insert their own expenses"
   on expenses for insert
   with check (auth.uid() = user_id);
+
+create policy "Users can update their own expenses"
+  on expenses for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own expenses"
+  on expenses for delete
+  using (auth.uid() = user_id);

@@ -17,8 +17,16 @@ export const updateExpense = async (id, updates) => {
     .eq('id', id)
     .select()
   
-  if (error) throw error
-  return data[0]
+  if (error) {
+    console.error('Error updating expense:', error);
+    throw error;
+  }
+  
+  if (!data || data.length === 0) {
+    throw new Error('Expense not found');
+  }
+  
+  return data[0];
 }
 
 export const getExpenses = async (userId) => {
@@ -99,10 +107,20 @@ export const deleteCategory = async (id) => {
 }
 
 export const deleteExpense = async (id) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('expenses')
     .delete()
     .eq('id', id)
+    .select()
   
-  if (error) throw error
+  if (error) {
+    console.error('Error deleting expense:', error);
+    throw error;
+  }
+  
+  if (!data || data.length === 0) {
+    throw new Error('Expense not found');
+  }
+  
+  return data[0];
 } 

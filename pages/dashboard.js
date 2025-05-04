@@ -159,10 +159,16 @@ export default function Dashboard() {
       const updates = {
         amount: amount,
         description: editingExpense.description.trim(),
-        category_id: editingExpense.category_id
+        category_id: editingExpense.category_id,
+        user_id: user.id // Ensure the user_id is included
       };
       
-      await updateExpense(editingExpense.id, updates);
+      const updatedExpense = await updateExpense(editingExpense.id, updates);
+      
+      if (!updatedExpense) {
+        throw new Error('Failed to update expense');
+      }
+      
       setSnackbar({ open: true, message: 'Expense updated successfully', severity: 'success' });
       setEditingExpense(null);
       loadData();
@@ -182,7 +188,12 @@ export default function Dashboard() {
         throw new Error('User not authenticated');
       }
       
-      await deleteExpense(id);
+      const deletedExpense = await deleteExpense(id);
+      
+      if (!deletedExpense) {
+        throw new Error('Failed to delete expense');
+      }
+      
       setSnackbar({ open: true, message: 'Expense deleted successfully', severity: 'success' });
       setDeleteExpenseConfirmation(null);
       loadData();
