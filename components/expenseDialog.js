@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -7,9 +7,15 @@ import {
   TextField,
   Button,
   MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Alert,
 } from '@mui/material'
 import { useAuth } from '../supabase/auth'
 import { createExpense, updateExpense } from '../supabase/db'
+import { predictCategory } from '../utils/aiCategory'
+import { supabase } from '../utils/supabaseClient'
 
 export default function ExpenseDialog({ open, onClose, expense = null }) {
   const { user } = useAuth()
@@ -19,6 +25,61 @@ export default function ExpenseDialog({ open, onClose, expense = null }) {
     category_id: expense?.category_id || '',
     date: expense?.date || new Date().toISOString().split('T')[0],
   })
+  const [categories, setCategories] = useState([])
+  const [autoCategorization, setAutoCategorization] = useState(true)
+  const [showCategoryAlert, setShowCategoryAlert] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      fetchCategories()
+      fetchUserSettings()
+    }
+  }, [open])
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      setCategories(data)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  const fetchUserSettings = async () => {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('auto_categorization')
+      .eq('user_id', user.id)
+      .single()
+
+    if (data) {
+      setAutoCategorization(data.auto_categorization)
+    }
+  }
+
+  const handleDescriptionChange = async (e) => {
+    const newDescription = e.target.value
+    setFormData({ ...formData, description: newDescription })
+    
+    if (autoCategorization && newDescription) {
+      const predictedCategory = await predictCategory(newDescription, categories.map(c => c.name))
+      // Fuzzy, case-insensitive match
+      const matchingCategory = categories.find(c =>
+        c.name.toLowerCase().includes(predictedCategory.toLowerCase()) ||
+        predictedCategory.toLowerCase().includes(c.name.toLowerCase())
+      )
+      if (matchingCategory) {
+        setFormData(prev => ({ ...prev, category_id: matchingCategory.id }))
+        setShowCategoryAlert(true)
+      }
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -61,9 +122,29 @@ export default function ExpenseDialog({ open, onClose, expense = null }) {
             label="Description"
             fullWidth
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={handleDescriptionChange}
             required
           />
+          {showCategoryAlert && (
+            <Alert severity="info" sx={{ mt: 1, mb: 1 }}>
+              Category automatically set to: {categories.find(c => c.id === formData.category_id)?.name}
+            </Alert>
+          )}
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={formData.category_id}
+              label="Category"
+              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+              required
+            >
+              {categories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <TextField
             margin="dense"
             label="Date"
