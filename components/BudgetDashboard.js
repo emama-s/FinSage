@@ -6,17 +6,19 @@ import {
   Typography,
   Grid,
   CircularProgress,
-  Alert,
-  Switch,
-  FormControlLabel,
 } from '@mui/material';
 import { supabase } from '../utils/supabaseClient';
 import { useUserSettings } from '../contexts/UserSettingsContext';
+import { getCategoryColor } from '../utils/aiCategory';
 
 const BudgetDashboard = ({ userId, onSettingsChange }) => {
   const [budgetData, setBudgetData] = useState({});
   const [loading, setLoading] = useState(true);
-  const { settings, updateSetting } = useUserSettings();
+  const userSettings = useUserSettings();
+  if (!userSettings) {
+    return <div>Loading user settings...</div>;
+  }
+  const { settings, updateSetting } = userSettings;
 
   useEffect(() => {
     fetchBudgetData();
@@ -57,10 +59,6 @@ const BudgetDashboard = ({ userId, onSettingsChange }) => {
     setLoading(false);
   };
 
-  const handleSettingChange = (setting) => {
-    updateSetting(setting, !settings[setting]);
-  };
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -72,34 +70,6 @@ const BudgetDashboard = ({ userId, onSettingsChange }) => {
   return (
     <Box sx={{ p: 3 }}>
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Smart Features
-              </Typography>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.smartSuggestions}
-                    onChange={() => handleSettingChange('smartSuggestions')}
-                  />
-                }
-                label="Enable Smart Suggestions"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.autoCategorization}
-                    onChange={() => handleSettingChange('autoCategorization')}
-                  />
-                }
-                label="Enable Auto Categorization"
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-
         {Object.entries(budgetData).map(([category, average]) => (
           <Grid item xs={12} sm={6} md={4} key={category}>
             <Card

@@ -9,7 +9,7 @@ import ExpenseDialog from '../components/expenseDialog';
 import { useAuth } from '../supabase/auth';
 import { createExpense, getExpenses, createCategory, getCategories, updateCategory, deleteCategory, updateExpense, deleteExpense } from '../supabase/db';
 import styles from '../styles/dashboard.module.scss';
-import BudgetDashboard from '../components/BudgetDashboard';
+import BudgetInsights from '../components/BudgetInsights';
 import { supabase } from '../utils/supabaseClient';
 import { predictCategory } from '../utils/aiCategory';
 
@@ -582,7 +582,7 @@ export default function Dashboard() {
             <Typography variant="h4" component="h1" gutterBottom>
               Budget Insights
             </Typography>
-            <BudgetDashboard userId={user.id} onSettingsChange={handleSettingsChange} />
+            <BudgetInsights userId={user.id} />
           </Box>
         )}
       </Container>
